@@ -28,3 +28,7 @@ jobs:
         # role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
         role-duration-seconds: 1200
         role-session-name: GitHub-Actions-Bootstrap
+    
+    - name: Bootstrapping GitHub actions stack
+      run: |
+        ./bootstrap.sh
