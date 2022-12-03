@@ -22,6 +22,8 @@ jobs:
           python-version: '${{ env.PYTHON_VERSION}}'
           cache: 'pip' # caching pip dependencies
       - run: pip install -r requirements.txt
+      - name: chmod
+        run: chmod -R +x ./.github *.sh
       - name: Validate CloudFormation templates
         run: |
           ./build.sh

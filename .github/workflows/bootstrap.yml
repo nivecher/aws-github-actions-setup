@@ -30,7 +30,7 @@ jobs:
           role-session-name: GitHub-Actions-Bootstrap
 
       - name: chmod
-        run: chmod -R +x ./.github
+        run: chmod -R +x ./.github *.sh
 
       - name: Bootstrapping GitHub actions stack
         run: |
