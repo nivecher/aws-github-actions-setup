@@ -1,0 +1,140 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Setup IAM user for GitHub Actions and IAM role for using CloudFormation and Terraform
+
+Parameters:
+  GitHubActionsUserName:
+    Type: String
+    Default: github-actions-deployer
+  DeploymentRoleName:
+    Type: String
+    Default: github-actions-deployer-stack-role
+  # ECSTaskExecutionRoleName:
+  #   Type: String
+  #   Default: github-actions-ecs-task-execution-role
+  GitHubOrg:
+    Type: String
+    Default: nivecher # TODO CHANGEME
+  RepositoryName:
+    Type: String
+    Default: "*" # TODO CHANGEME
+  OIDCProviderArn:
+    Description: Arn for the GitHub OIDC Provider.
+    Default: ""
+    Type: String
+
+Conditions:
+  CreateOIDCProvider: !Equals
+    - !Ref OIDCProviderArn
+    - ""
+
+Resources:
+  GitHubActionsUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Ref GitHubActionsUserName
+
+  # The permissions that the GitHub Actions deployment workflow will have
+  GitHubActionsUserPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Users:
+        - !Ref GitHubActionsUser
+      PolicyName: allow-github-actions-deploy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - "cloudformation:*"
+              # - "ec2:DescribeVpcs"
+              # - "ec2:DescribeSubnets"
+              # - "ecr:GetAuthorizationToken"
+            Effect: Allow
+            Resource: "*"
+          - Action: "cloudformation:DeleteStack"
+            Effect: Deny
+            Resource: "*"
+          - Action: "iam:PassRole"
+            Effect: Allow
+            Resource: !GetAtt DeploymentRole.Arn
+          # - Action:
+          #     - "ecr:GetDownloadUrlForLayer"
+          #     - "ecr:BatchGetImage"
+          #     - "ecr:BatchCheckLayerAvailability"
+          #     - "ecr:PutImage"
+          #     - "ecr:InitiateLayerUpload"
+          #     - "ecr:UploadLayerPart"
+          #     - "ecr:CompleteLayerUpload"
+          #   Effect: Allow
+          #   Resource: !Sub "arn:${AWS::Partition}:ecr:*:${AWS::AccountId}:repository/github-actions-*"
+
+  GitHubActionsUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref GitHubActionsUser
+      Serial: 1
+
+  GitHubActionsCredentials: # Note this is for backwards compatability, but OpenID Connect (OIDC) is preferred
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Ref GitHubActionsUserName
+      SecretString: !Sub |
+        {
+          "AccessKeyId":"${GitHubActionsUserAccessKey}",
+          "SecretAccessKey":"${GitHubActionsUserAccessKey.SecretAccessKey}"
+        }
+  # The permissions that the CloudFormation stack and Terraform deployments will have
+  DeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref DeploymentRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !If
+                - CreateOIDCProvider
+                - !Ref GithubOidc
+                - !Ref OIDCProviderArn
+            Condition:
+              StringLike: # TODO lock down to specific repo
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
+              ForAllValues:StringEquals:
+                token.actions.githubusercontent.com:iss: "https://token.actions.githubusercontent.com"
+                token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
+      ManagedPolicyArns: # keep list in alphabetical order
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonDynamoDBFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonLambdaFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonS3FullAccess
+        - !Sub arn:${AWS::Partition}::aws:policy/CloudWatchLogsFullAccess
+        - !Sub arn:${AWS::Partition}::aws:policy/ResourceGroupsandTagEditorFullAccess
+      # Policies: # TODO future
+      #   - PolicyName: allow-pass-role-for-ecs-task-exec-role
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Statement:
+      #         - Action: "iam:PassRole"
+      #           Effect: Allow
+      #           Resource: !GetAtt ECSTaskExecutionRole.Arn
+
+  GithubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+Outputs:
+  Role:
+    Value: !GetAtt DeploymentRole.Arn
