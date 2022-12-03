@@ -1,0 +1,30 @@
+name: Bootstrap
+run-name: ${{ github.actor }} is bootstrapping 🚀
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: "Select the region to bootstrap"
+        required: true
+jobs:
+  Deploy:
+    name: Setup GitHub Actions in AWS
+    runs-on: ubuntu-latest
+    # These permissions are needed to interact with GitHub's OIDC Token endpoint.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials from Test account
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ github.event.inputs.region }}
+        # role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        # role-external-id: ${{ secrets.AWS_ROLE_EXTERNAL_ID }}
+        role-duration-seconds: 1200
+        role-session-name: GitHub-Actions-Bootstrap

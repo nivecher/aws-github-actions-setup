@@ -84,7 +84,7 @@ Resources:
           "SecretAccessKey":"${GitHubActionsUserAccessKey.SecretAccessKey}"
         }
   # The permissions that the CloudFormation stack and Terraform deployments will have
-  DeploymentRole:
+  DeploymentRole: # TODO break into separate roles
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Ref DeploymentRoleName
@@ -112,10 +112,10 @@ Resources:
                 token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
       ManagedPolicyArns: # keep list in alphabetical order
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonDynamoDBFullAccess
-        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonLambdaFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSLambda_FullAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonS3FullAccess
-        - !Sub arn:${AWS::Partition}::aws:policy/CloudWatchLogsFullAccess
-        - !Sub arn:${AWS::Partition}::aws:policy/ResourceGroupsandTagEditorFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchLogsFullAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/ResourceGroupsandTagEditorFullAccess
       # Policies: # TODO future
       #   - PolicyName: allow-pass-role-for-ecs-task-exec-role
       #     PolicyDocument:

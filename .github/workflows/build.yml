@@ -4,7 +4,7 @@ env:
   PYTHON_VERSION: 3.9
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  CloudFormation-Lint:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
