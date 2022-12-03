@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       region:
-        description: "Select the region to bootstrap"
+        description: "Enter the region to bootstrap (e.g., us-east-2)"
         required: true
 jobs:
   Deploy:
