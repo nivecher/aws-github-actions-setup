@@ -5,10 +5,10 @@ Description: Setup IAM user for GitHub Actions and IAM role for using CloudForma
 Parameters:
   GitHubActionsUserName:
     Type: String
-    Default: github-actions-deployer
+    Default: github-actions-user
   DeploymentRoleName:
     Type: String
-    Default: github-actions-deployer-stack-role
+    Default: github-actions-deployer-role
   # ECSTaskExecutionRoleName:
   #   Type: String
   #   Default: github-actions-ecs-task-execution-role
@@ -17,7 +17,7 @@ Parameters:
     Default: nivecher # TODO CHANGEME
   RepositoryName:
     Type: String
-    Default: "*" # TODO CHANGEME
+    Default: "*" # Federated
   OIDCProviderArn:
     Description: Arn for the GitHub OIDC Provider.
     Default: ""
@@ -111,6 +111,7 @@ Resources:
                 token.actions.githubusercontent.com:iss: "https://token.actions.githubusercontent.com"
                 token.actions.githubusercontent.com:aud: "sts.amazonaws.com"
       ManagedPolicyArns: # keep list in alphabetical order
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSCloudFormationFullAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonDynamoDBFullAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AWSLambda_FullAccess
         - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonS3FullAccess
