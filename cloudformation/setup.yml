@@ -24,9 +24,7 @@ Parameters:
     Type: String
 
 Conditions:
-  CreateOIDCProvider: !Equals
-    - !Ref OIDCProviderArn
-    - ""
+  CreateOIDCProvider: !Equals [!Ref OIDCProviderArn, ""]
 
 Resources:
   GitHubActionsUser:
@@ -70,12 +68,16 @@ Resources:
 
   GitHubActionsUserAccessKey:
     Type: AWS::IAM::AccessKey
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
     Properties:
       UserName: !Ref GitHubActionsUser
       Serial: 1
 
   GitHubActionsCredentials: # Note this is for backwards compatability, but OpenID Connect (OIDC) is preferred
     Type: AWS::SecretsManager::Secret
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
     Properties:
       Name: !Ref GitHubActionsUserName
       SecretString: !Sub |
